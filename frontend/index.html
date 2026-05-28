@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComponentAI - AI 组件生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #e0e0e0;
+            --text-secondary: #999;
+            --accent: #6c5ce7;
+            --accent-hover: #7d6ff0;
+            --success: #00b894;
+            --radius: 10px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        textarea, select {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 14px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .component-type-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .type-chip {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .type-chip:hover {
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .type-chip.active {
+            background: rgba(108, 92, 231, 0.15);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .framework-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .fw-chip {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .fw-chip:hover {
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .fw-chip.active {
+            background: rgba(108, 92, 231, 0.15);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+            background: var(--accent);
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(108, 92, 231, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #252525;
+            box-shadow: none;
+        }
+
+        #output {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        #output:empty::after {
+            content: '生成的代码将显示在这里...';
+            color: var(--text-secondary);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            color: #fff;
+            border-color: #555;
+        }
+
+        .output-wrapper {
+            position: relative;
+        }
+
+        .status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+
+        .status.success {
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success);
+        }
+
+        .status.error {
+            background: rgba(255, 118, 117, 0.1);
+            color: #ff7675;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(108, 92, 231, 0.2);
+            color: var(--accent);
+            margin-left: 8px;
+        }
+
+        @media (max-width: 640px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+            .component-type-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .framework-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ComponentAI</h1>
+            <p>描述你的需求，AI 帮你生成生产级组件代码</p>
+        </header>
+
+        <div class="card">
+            <h2>描述你的组件需求</h2>
+            <label>组件类型</label>
+            <div class="component-type-grid" id="componentTypes">
+                <div class="type-chip active" data-type="按钮">🔘 按钮</div>
+                <div class="type-chip" data-type="表单">📝 表单</div>
+                <div class="type-chip" data-type="卡片">🃏 卡片</div>
+                <div class="type-chip" data-type="弹窗">🪟 弹窗</div>
+                <div class="type-chip" data-type="导航栏">🧭 导航栏</div>
+                <div class="type-chip" data-type="表格">📊 表格</div>
+                <div class="type-chip" data-type="列表">📋 列表</div>
+                <div class="type-chip" data-type="自定义">✨ 自定义</div>
+            </div>
+
+            <label style="margin-top: 20px;">目标框架</label>
+            <div class="framework-grid" id="frameworks">
+                <div class="fw-chip active" data-fw="react">React</div>
+                <div class="fw-chip" data-fw="vue">Vue</div>
+                <div class="fw-chip" data-fw="svelte">Svelte</div>
+                <div class="fw-chip" data-fw="html">HTML/CSS</div>
+                <div class="fw-chip" data-fw="web-component">Web Component</div>
+            </div>
+
+            <label style="margin-top: 20px;">详细描述</label>
+            <textarea id="description" placeholder="例如：一个圆角的主按钮，hover 时有阴影动画，支持 loading 状态和 disabled 状态，颜色要渐变紫色..."></textarea>
+        </div>
+
+        <div class="card">
+            <h2>生成结果 <span class="badge" id="genInfo">React · 按钮</span></h2>
+            <div class="output-wrapper">
+                <div id="output"></div>
+            </div>
+            <div class="btn-row" style="margin-top: 16px;">
+                <button class="btn" id="generateBtn" onclick="generate()">⚡ 生成组件</button>
+                <button class="btn btn-secondary" id="copyBtn" onclick="copyOutput()" disabled>📋 复制代码</button>
+                <button class="btn btn-secondary" id="clearBtn" onclick="clearOutput()">🗑 清空</button>
+            </div>
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // ── State ──────────────────────────────
+        let selectedType = '按钮';
+        let selectedFramework = 'react';
+        const API_BASE = 'http://localhost:8000';
+        // 部署后改成: 'https://componentai-backend.railway.app'
+
+        // ── Chip toggles ──────────────────────
+        document.querySelectorAll('#componentTypes .type-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('#componentTypes .type-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                selectedType = chip.dataset.type;
+                updateGenInfo();
+            });
+        });
+
+        document.querySelectorAll('#frameworks .fw-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('#frameworks .fw-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                selectedFramework = chip.dataset.fw;
+                updateGenInfo();
+            });
+        });
+
+        function updateGenInfo() {
+            document.getElementById('genInfo').textContent = `${selectedFramework} · ${selectedType}`;
+        }
+
+        // ── Generate ───────────────────────────
+        async function generate() {
+            const desc = document.getElementById('description').value.trim();
+            const output = document.getElementById('output');
+            const status = document.getElementById('status');
+            const btn = document.getElementById('generateBtn');
+            const copyBtn = document.getElementById('copyBtn');
+
+            if (!desc) {
+                status.innerHTML = '<div class="status error">请输入组件描述</div>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 生成中...';
+            output.textContent = '';
+            status.innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system: buildSystemPrompt(selectedType, selectedFramework),
+                        user: desc
+                    })
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${errText}`);
+                }
+
+                const data = await res.json();
+                output.textContent = data.content;
+                copyBtn.disabled = false;
+                status.innerHTML = '<div class="status success">✓ 生成完成</div>';
+            } catch (err) {
+                output.textContent = '';
+                copyBtn.disabled = true;
+                status.innerHTML = `<div class="status error">✗ ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚡ 生成组件';
+            }
+        }
+
+        function buildSystemPrompt(type, fw) {
+            const frameworkGuides = {
+                react: 'Use React functional components with hooks (useState, useEffect). Use Tailwind CSS for styling. Export as default.',
+                vue: 'Use Vue 3 Composition API with <script setup>. Use Tailwind CSS for styling. Single-file component.',
+                svelte: 'Use Svelte 5 runes syntax ($state, $derived). Use Tailwind CSS for styling. Single-file component.',
+                html: 'Use vanilla HTML/CSS/JS in a single file. Modern CSS features, no framework.',
+                'web-component': 'Use native Web Components (customElements.define). Shadow DOM with encapsulated styles.'
+            };
+
+            return `You are a senior frontend engineer. Generate a production-grade ${type} component using ${fw}.
+
+Framework requirements: ${frameworkGuides[fw] || 'Use modern best practices.'}
+
+Rules:
+- Write clean, well-structured code
+- Include loading, empty, error, and disabled states where applicable
+- Add proper keyboard accessibility (ARIA labels, focus management)
+- Use semantic HTML
+- Include brief usage example in comments at the end
+- Output ONLY the code, no explanations`;
+        }
+
+        function copyOutput() {
+            const text = document.getElementById('output').textContent;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const orig = btn.textContent;
+                btn.textContent = '✓ 已复制!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            });
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+            document.getElementById('copyBtn').disabled = true;
+            document.getElementById('status').innerHTML = '';
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ── Enter to submit ────────────────────
+        document.getElementById('description').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                generate();
+            }
+        });
+    </script>
+</body>
+</html>
