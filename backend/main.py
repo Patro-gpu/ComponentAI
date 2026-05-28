@@ -1,7 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import httpx, os
+import httpx, os, logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -37,8 +40,12 @@ async def generate(req: GenRequest):
             }
         )
         data = res.json()
-        content = data["choices"][0]["message"]["content"]
-        return {"content": content}
+        logger.info(f"DeepSeek status={res.status_code} keys={list(data.keys())}")
+
+        if "choices" in data:
+            return {"content": data["choices"][0]["message"]["content"]}
+        else:
+            raise HTTPException(500, f"DeepSeek API error: {data}")
 
 @app.get("/health")
 def health():
