@@ -15,38 +15,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEY = os.getenv("DEEPSEEK_API_KEY")
+API_KEY = os.getenv("API_KEY") or os.getenv("DEEPSEEK_API_KEY")
+API_BASE = os.getenv("API_BASE", "https://api.deepseek.com")
+MODEL = os.getenv("MODEL", "deepseek-chat")
+
 
 class GenRequest(BaseModel):
     system: str
     user: str
 
+
 @app.post("/api/generate")
 async def generate(req: GenRequest):
     if not API_KEY:
-        raise HTTPException(500, "API key not configured")
-    async with httpx.AsyncClient(timeout=30) as client:
+        raise HTTPException(500, "API_KEY not configured")
+
+    url = f"{API_BASE}/chat/completions"
+    async with httpx.AsyncClient(timeout=60) as client:
         res = await client.post(
-            "https://api.deepseek.com/chat/completions",
+            url,
             headers={"Authorization": f"Bearer {API_KEY}"},
             json={
-                "model": "deepseek-chat",
+                "model": MODEL,
                 "messages": [
                     {"role": "system", "content": req.system},
-                    {"role": "user",   "content": req.user}
+                    {"role": "user", "content": req.user},
                 ],
                 "max_tokens": 2000,
-                "temperature": 0.7
-            }
+                "temperature": 0.7,
+            },
         )
         data = res.json()
-        logger.info(f"DeepSeek status={res.status_code} keys={list(data.keys())}")
+        logger.info(f"API status={res.status_code} model={MODEL} keys={list(data.keys())}")
 
         if "choices" in data:
             return {"content": data["choices"][0]["message"]["content"]}
         else:
-            raise HTTPException(500, f"DeepSeek API error: {data}")
+            raise HTTPException(500, f"API error: {data}")
+
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "model": MODEL}
