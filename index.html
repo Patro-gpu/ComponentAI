@@ -63,12 +63,12 @@ textarea:focus{outline:none;border-color:var(--accent)}
     <div>
       <label>Component Type</label>
       <div class="chip-grid" id="componentTypes">
-        <div class="chip active" data-type="按钮">Button</div>
+        <div class="chip" data-type="按钮">Button</div>
         <div class="chip" data-type="表单">Form</div>
         <div class="chip" data-type="卡片">Card</div>
         <div class="chip" data-type="弹窗">Modal</div>
         <div class="chip" data-type="导航栏">Navbar</div>
-        <div class="chip" data-type="表格">Table</div>
+        <div class="chip active" data-type="表格">Table</div>
         <div class="chip" data-type="列表">List</div>
         <div class="chip" data-type="仪表盘">Dashboard</div>
         <div class="chip" data-type="自定义">Custom</div>
@@ -77,8 +77,8 @@ textarea:focus{outline:none;border-color:var(--accent)}
     <div>
       <label>Framework</label>
       <div class="chip-grid" id="frameworks">
-        <div class="chip active" data-fw="react">React</div>
-        <div class="chip" data-fw="vue">Vue 3</div>
+        <div class="chip" data-fw="react">React</div>
+        <div class="chip active" data-fw="vue">Vue 3</div>
         <div class="chip" data-fw="svelte">Svelte</div>
         <div class="chip" data-fw="html">HTML/CSS</div>
         <div class="chip" data-fw="web-component">WebComp</div>
@@ -133,9 +133,9 @@ textarea:focus{outline:none;border-color:var(--accent)}
 
 <script>
 // ── State ──────────────────────────────────
-let selectedType = '按钮';
+let selectedType = '表格';
 let selectedLib = 'element-plus';
-let selectedFramework = 'react';
+let selectedFramework = 'vue';
 let generatedCode = '';
 const API_BASE = 'https://componentai-backend-production.up.railway.app';
 
@@ -146,8 +146,19 @@ document.querySelectorAll('#componentTypes .chip').forEach(c => {
 document.querySelectorAll('#frameworks .chip').forEach(c => {
   c.onclick = () => { selectOnly('#frameworks .chip', c); selectedFramework = c.dataset.fw; updateBadge(); };
 });
+// Framework↔Library mapping: pick lib → auto-switch framework
+const LIB_FW_MAP = { 'antd':'react','shadcn':'react','arco':'react', 'element-plus':'vue','antd-vue':'vue','naive-ui':'vue','vant':'vue', 'tdesign':'react','tailwind':'react' };
 document.querySelectorAll('#uiLibs .chip').forEach(c => {
-  c.onclick = () => { selectOnly('#uiLibs .chip', c); selectedLib = c.dataset.lib; updateBadge(); };
+  c.onclick = () => {
+    selectOnly('#uiLibs .chip', c); selectedLib = c.dataset.lib;
+    if (c.dataset.lib !== 'auto' && LIB_FW_MAP[c.dataset.lib]) {
+      selectedFramework = LIB_FW_MAP[c.dataset.lib];
+      document.querySelectorAll('#frameworks .chip').forEach(f => {
+        f.classList.toggle('active', f.dataset.fw === selectedFramework);
+      });
+    }
+    updateBadge();
+  };
 });
 
 function selectOnly(sel, el) {
